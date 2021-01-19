@@ -38,4 +38,19 @@ public interface UserMapper extends BaseMapper<User> {
      */
     List<User> findUserDetail(@Param("user") User user);
 
+    /**
+     * 根据id查询用户两步验证密钥
+     *
+     * @param id 用户id
+     * @return 两步验证密钥
+     */
+    String getAuthKeyByUserId(Long id);
+
+    /**
+     * 根据id设置用户两步验证密钥
+     *
+     * @param id      用户id
+     * @param authKey 两步验证密钥
+     */
+    int setAuthKeyByUserId(@Param("id") Long id, @Param("authKey") String authKey);
 }

@@ -3,20 +3,20 @@ package cc.mrbird.febs.system.controller;
 import cc.mrbird.febs.common.authentication.ShiroHelper;
 import cc.mrbird.febs.common.controller.BaseController;
 import cc.mrbird.febs.common.entity.FebsConstant;
+import cc.mrbird.febs.common.entity.FebsResponse;
 import cc.mrbird.febs.common.utils.DateUtil;
 import cc.mrbird.febs.common.utils.FebsUtil;
 import cc.mrbird.febs.system.entity.User;
 import cc.mrbird.febs.system.service.IUserService;
+import com.warrenstrange.googleauth.GoogleAuthenticator;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.session.ExpiredSessionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +31,8 @@ public class ViewController extends BaseController {
     private IUserService userService;
     @Autowired
     private ShiroHelper shiroHelper;
+    @Autowired
+    private GoogleAuthenticator googleAuthenticator;
 
     @GetMapping("login")
     @ResponseBody
@@ -55,10 +57,35 @@ public class ViewController extends BaseController {
         return "redirect:/index";
     }
 
+    @PostMapping("/2faVerify")
+    @ResponseBody
+    public FebsResponse faVerify(HttpServletRequest request, Integer verifyCode) {
+        User user = getCurrentUser();
+        String authKey = userService.getAuthKeyByUserId(user.getUserId());
+        if (StringUtils.isBlank(authKey) || googleAuthenticator.authorize(authKey, verifyCode)) {
+            request.getSession().setAttribute("is2faVerify", true);
+            return new FebsResponse().success();
+        } else {
+            request.getSession().setAttribute("is2faVerify", false);
+            return new FebsResponse().message("验证码错误").fail();
+        }
+    }
+
+    @GetMapping("/2faVerifyPage")
+    public String faVerifyPage(HttpServletRequest request, Integer verifyCode) {
+        return FebsUtil.view("system/user/2faVerifyPage");
+    }
+
     @GetMapping("index")
-    public String index(Model model) {
+    public String index(HttpServletRequest request, Model model) {
+        User user = getCurrentUser();
+        if (user.getActivated2fa()) {
+            Object attr = request.getSession().getAttribute("is2faVerify");
+            if (attr == null || !(boolean) attr) {
+                return "redirect:/2faVerifyPage";
+            }
+        }
         AuthorizationInfo authorizationInfo = shiroHelper.getCurrentuserAuthorizationInfo();
-        User user = super.getCurrentUser();
         User currentUserDetail = userService.findByName(user.getUsername());
         currentUserDetail.setPassword("It's a secret");
         model.addAttribute("user", currentUserDetail);
@@ -90,6 +117,11 @@ public class ViewController extends BaseController {
     @GetMapping(FebsConstant.VIEW_PREFIX + "user/profile/update")
     public String profileUpdate() {
         return FebsUtil.view("system/user/profileUpdate");
+    }
+
+    @GetMapping(FebsConstant.VIEW_PREFIX + "user/2fa")
+    public String user2fa() {
+        return FebsUtil.view("system/user/2fa");
     }
 
     @GetMapping(FebsConstant.VIEW_PREFIX + "system/user")

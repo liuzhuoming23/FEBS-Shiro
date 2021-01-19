@@ -5,21 +5,28 @@ import cc.mrbird.febs.common.controller.BaseController;
 import cc.mrbird.febs.common.entity.FebsResponse;
 import cc.mrbird.febs.common.entity.QueryRequest;
 import cc.mrbird.febs.common.exception.FebsException;
+import cc.mrbird.febs.common.utils.FebsQRGenerator;
 import cc.mrbird.febs.common.utils.MD5Util;
 import cc.mrbird.febs.system.entity.User;
 import cc.mrbird.febs.system.service.IUserService;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
+import com.warrenstrange.googleauth.GoogleAuthenticator;
+import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import com.wuwenze.poi.ExcelKit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +41,8 @@ public class UserController extends BaseController {
 
     @Autowired
     private IUserService userService;
+    @Autowired
+    private GoogleAuthenticator googleAuthenticator;
 
     @GetMapping("{username}")
     public User getUser(@NotBlank(message = "{required}") @PathVariable String username) {
@@ -132,5 +141,33 @@ public class UserController extends BaseController {
     public void export(QueryRequest queryRequest, User user, HttpServletResponse response) {
         List<User> users = this.userService.findUserDetailList(user, queryRequest).getRecords();
         ExcelKit.$Export(User.class, response).downXlsx(users, false);
+    }
+
+    @GetMapping("2fa")
+    public FebsResponse img2fa(HttpServletRequest request, HttpServletResponse response) {
+        User user = getCurrentUser();
+        GoogleAuthenticatorKey googleAuthenticatorKey = googleAuthenticator.createCredentials();
+        String authKey = googleAuthenticatorKey.getKey();
+        HttpSession session = request.getSession();
+        session.setAttribute("2fa", authKey);
+        try {
+            FebsQRGenerator.geneQRCode("demo.febs.com", user.getEmail(), googleAuthenticatorKey, response.getOutputStream());
+            return new FebsResponse().success();
+        } catch (IOException e) {
+            return new FebsResponse().fail();
+        }
+    }
+
+    @PostMapping("2fa/confirm")
+    public FebsResponse confirm2fa(HttpServletRequest request, Integer verifyCode) {
+        User user = getCurrentUser();
+        HttpSession session = request.getSession();
+        String authKey = session.getAttribute("2fa").toString();
+        boolean isVerify = googleAuthenticator.authorize(authKey, verifyCode);
+        if (isVerify) {
+            userService.setAuthKeyByUserId(user.getUserId(), authKey);
+            return new FebsResponse().success();
+        }
+        return new FebsResponse().code(HttpStatus.INTERNAL_SERVER_ERROR).message("验证码不正确");
     }
 }

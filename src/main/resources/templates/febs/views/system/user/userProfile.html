@@ -133,6 +133,32 @@
                 </div>
             </div>
         </div>
+        <div class="layui-col-md6 layui-col-sm6 layui-col-xs12">
+            <div class="layui-card">
+                <div class="layui-card-header">两步验证配置</div>
+                <div class="layui-card-body">
+                    <form class="layui-form" action="" lay-filter="system-setting-form">
+                        <script type="text/html" template>
+                            <div class="layui-form-item">
+                                <div><span class="layui-icon layui-icon-google"></span> 两步验证状态：
+                                    {{# if(currentUser.activated2fa){ }}
+                                    <a style="color: greenyellow">已开启</a>
+                                    {{# } }}
+                                    {{# if(!currentUser.activated2fa){ }}
+                                    <a style="color: red">未开启</a>
+                                    {{# } }}
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                {{# if(!currentUser.activated2fa){ }}
+                                <button class="layui-btn" id="2fa-redirect">开启两步验证</button>
+                                {{# } }}
+                            </div>
+                        </script>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script data-th-inline="none" type="text/javascript">
@@ -156,6 +182,16 @@
                 btn: ['确定'],
                 yes: function () {
                     $('#profile-update').find('#submit').trigger('click');
+                }
+            });
+        });
+
+        $view.on('click', '#2fa-redirect', function () {
+            febs.modal.view('两步验证绑定', 'user/2fa', {
+                area: $(window).width() <= 750 ? '95%' : '50%',
+                btn: ['绑定'],
+                yes: function () {
+                    $('#febs-2fa').find('#submit').trigger('click');
                 }
             });
         });
@@ -192,7 +228,7 @@
             }
             febs.post(ctx + 'user/theme/update', data.field, function () {
                 _currentData = data.field;
-                febs.modal.confirm('修改成功','是否马上刷新页面生效？',function () {
+                febs.modal.confirm('修改成功', '是否马上刷新页面生效？', function () {
                     window.location.reload();
                 });
             });

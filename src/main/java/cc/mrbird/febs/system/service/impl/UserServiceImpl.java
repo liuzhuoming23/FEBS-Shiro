@@ -186,6 +186,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
     }
 
+    @Override
+    public String getAuthKeyByUserId(Long id) {
+        return baseMapper.getAuthKeyByUserId(id);
+    }
+
+    @Override
+    public boolean setAuthKeyByUserId(Long id, String authKey) {
+        return baseMapper.setAuthKeyByUserId(id, authKey) == 1;
+    }
+
     private void setUserRoles(User user, String[] roles) {
         List<UserRole> userRoles = new ArrayList<>();
         Arrays.stream(roles).forEach(roleId -> {

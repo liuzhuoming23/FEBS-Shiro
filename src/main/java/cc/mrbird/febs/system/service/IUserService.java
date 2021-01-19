@@ -109,4 +109,20 @@ public interface IUserService extends IService<User> {
      * @param user 个人信息
      */
     void updateProfile(User user);
+
+    /**
+     * 根据id查询用户两步验证密钥
+     *
+     * @param id 用户id
+     * @return 两步验证密钥
+     */
+    String getAuthKeyByUserId(Long id);
+
+    /**
+     * 根据id设置用户两步验证密钥
+     *
+     * @param id      用户id
+     * @param authKey 两步验证密钥
+     */
+    boolean setAuthKeyByUserId(Long id, String authKey);
 }

@@ -25,8 +25,6 @@ import java.util.Date;
 @Excel("用户信息表")
 public class User implements Serializable {
 
-    private static final long serialVersionUID = -4352868070794165001L;
-
     // 用户状态：有效
     public static final String STATUS_VALID = "1";
     // 用户状态：锁定
@@ -49,8 +47,7 @@ public class User implements Serializable {
     public static final String TAB_OPEN = "1";
     // TAB关闭
     public static final String TAB_CLOSE = "0";
-
-
+    private static final long serialVersionUID = -4352868070794165001L;
     /**
      * 用户 ID
      */
@@ -179,6 +176,10 @@ public class User implements Serializable {
     @ExcelField(value = "角色")
     @TableField(exist = false)
     private String roleName;
+
+    @ExcelField(value = "是否激活两步验证")
+    @TableField("ACTIVATED_2FA")
+    private Boolean activated2fa;
 
     public Long getId() {
         return userId;
