@@ -1,0 +1,46 @@
+<div class="layui-tab layui-tab-brief" id="febs-2fa">
+    <div class="layui-form" lay-filter="2fa-form">
+        <div class="layui-form-item">
+            <label>使用手机验证器应用扫描二维码：</label>
+            <div class="layui-row">
+                <img style="display: block" class="2facodeimg" id="2facodeimg"/>
+            </div>
+            <div class="layui-row">
+                <label class="layui-form-label layui-icon label-icon layui-icon-vercode">验证码：</label>
+                <div class="layui-input-inline">
+                    <input type="text" maxlength="6" name="verifyCode" lay-verify="required"
+                           placeholder="验证码" class="layui-input" autocomplete="off">
+                </div>
+            </div>
+            <div class="layui-form-item febs-hide">
+                <button class="layui-btn" lay-submit="" lay-filter="2fa-submit" id="submit"></button>
+            </div>
+        </div>
+    </div>
+</div>
+<script data-th-inline="none" type="text/javascript">
+    layui.use(['jquery', 'form', 'febs'], function () {
+        var $ = layui.jquery,
+            element = layui.element,
+            febs = layui.febs,
+            form = layui.form,
+            $view = $('#febs-2fa');
+
+        initCode();
+
+        function initCode() {
+            $view.find('#2facodeimg').attr("src", ctx + "user/2fa?data=" + new Date().getTime());
+        }
+
+        form.on('submit(2fa-submit)', function (data) {
+            febs.post(ctx + 'user/2fa/confirm', data.field, function () {
+                layer.closeAll();
+                febs.alert.success('两步验证绑定成功');
+                febs.modal.confirm('两步验证绑定成功', '是否马上刷新页面生效？', function () {
+                    window.location.reload();
+                });
+            });
+            return false;
+        });
+    });
+</script>
